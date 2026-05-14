@@ -2183,12 +2183,14 @@ func (c *Client) receiveData(i int) {
 func (c *Client) sendData(i int) {
 	defer func() {
 		if r := recover(); r != nil {
-			if c.stop.gui {
-				log.Errorf("panic: %v", r)
-				c.stop.Cancel()
-			} else {
-				panic(r)
-			}
+			// Patched for Podstack: recover from goroutine panics in CLI mode
+			// too. Upstream v10.4.3 only recovers in GUI mode and re-panics
+			// in CLI, which kills the whole process when the peer closes its
+			// TCP connection mid-transfer. Log the error and cancel cleanly
+			// so the caller exits with a surfaced error instead of a stack
+			// trace.
+			log.Errorf("transfer worker panicked, cancelling: %v", r)
+			c.stop.Cancel()
 		}
 		log.Debugf("finished with %d", i)
 		c.numfinished++
