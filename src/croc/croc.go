@@ -683,21 +683,11 @@ func (c *Client) Send(filesInfo []FileInfo, emptyFoldersToTransfer []FileInfo, t
 	if c.Options.RelayPassword != models.DEFAULT_PASSPHRASE {
 		flags.WriteString("--pass " + c.Options.RelayPassword + " ")
 	}
-	fmt.Fprintf(os.Stderr, `Code is: %[1]s
-
-On the other computer run:
-(For Windows)
-    croc %[2]s%[1]s
-(For Linux/macOS)
-    CROC_SECRET=%[1]q croc %[2]s
-`, c.Options.SharedSecret, flags.String())
-	if !c.Options.DisableClipboard {
-		clipboardText := c.Options.SharedSecret
-		if c.Options.ExtendedClipboard {
-			clipboardText = fmt.Sprintf("CROC_SECRET=%q croc %s", c.Options.SharedSecret, strings.TrimSpace(flags.String()))
-		}
-		copyToClipboard(clipboardText, c.Options.Quiet, c.Options.ExtendedClipboard)
-	}
+	// Patched for Podstack: upstream prints the code phrase and a `croc ...`
+	// command-line example to stderr here; the embedding CLI prints its own
+	// branded banner so we drop this output entirely. We also skip the
+	// clipboard side-effect — the embedding CLI surfaces the code itself.
+	_ = flags // keep variable referenced; upstream uses it in the removed Fprintf above
 	if c.Options.ShowQrCode {
 		showReceiveCommandQrCode(fmt.Sprintf("%[1]s", c.Options.SharedSecret))
 	}
